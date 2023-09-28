@@ -1,135 +1,126 @@
-# Карта
-maps = [1,2,3,
-        4,5,6,
-        7,8,9]
- 
-# Победные комбинации
-victories = [[0,1,2],
-             [3,4,5],
-             [6,7,8],
-             [0,3,6],
-             [1,4,7],
-             [2,5,8],
-             [0,4,8],
-             [2,4,6]]
- 
-# Вывод карты на экран
-def print_maps():
-    print(maps[0], end = " ")
-    print(maps[1], end = " ")
-    print(maps[2])
- 
-    print(maps[3], end = " ")
-    print(maps[4], end = " ")
-    print(maps[5])
- 
-    print(maps[6], end = " ")
-    print(maps[7], end = " ")
-    print(maps[8])
-     
-# Ход
-def step_maps(step, symbol):
-    while step not in maps:
-        print('Некорректный ход. Попробуйте снова.')
-        step = int(input("Введите номер ячейки (1-9): "))
-    ind = maps.index(step)
-    maps[ind] = symbol
- 
-# Результат
-def get_result():
-    win = ""
- 
-    for i in victories:
-        if maps[i[0]] == "X" and maps[i[1]] == "X" and maps[i[2]] == "X":
-            win = "X"
-        if maps[i[0]] == "O" and maps[i[1]] == "O" and maps[i[2]] == "O":
-            win = "O"   
-             
-    return win
-   # Искусственный интеллект: поиск линии с нужным количеством X и O на победных линиях
-def check_line(sum_O,sum_X):
- 
-    step = ""
-    for line in victories:
-        o = 0
-        x = 0
- 
-        for j in range(0,3):
-            if maps[line[j]] == "O":
-                o = o + 1
-            if maps[line[j]] == "X":
-                x = x + 1
- 
-        if o == sum_O and x == sum_X:
-            for j in range(0,3):
-                if maps[line[j]] != "O" and maps[line[j]] != "X":
-                    step = maps[line[j]]
-                 
-    return step
- 
-    # Решающее направление:
-def AI():        
- 
-    step = ""
- 
-    # 1) если на какой либо из победных линий 2 свои фигуры и 0 чужих - ставим
-    step = check_line(2,0)
- 
-    # 2) если на какой либо из победных линий 2 чужие фигуры и 0 своих - ставим
-    if step == "":
-        step = check_line(0,2)        
- 
-    # 3) если 1 фигура своя и 0 чужих - ставим
-    if step == "":
-        step = check_line(1,0)           
- 
-    # 4) центр пуст, то занимаем центр
-    if step == "":
-        if maps[4] != "X" and maps[4] != "O":
-            step = 5           
- 
-    # 5) если центр занят, то занимаем первую ячейку
-    if step == "":
-        if maps[0] != "X" and maps[0] != "O":
-            step = 1           
-   
-    return step
- 
-game_over = False
-human = True
- 
-while game_over == False:
- 
-    # 1. Карта
-    print_maps()
- 
-    # 2. Просим сделать ход
-    if human == True:
-        symbol = "X"
-        step = int(input("Игрок, ходи: "))
-    else:
-        print("Настало время компьютера ")
-        symbol = "O"
-        step = AI()
- 
-    # 3. Если у компьютера есть возможность хода, то играем. Если нет, то ничья.
-    if step != "":
-        step = int(step) # преобразуем ввод пользователя в целое число
-        step_maps(step, symbol) # делаем ход в указанную ячейку
-        win = get_result() # определим победителя
-        if win != "":
-            game_over = True
-            if win == "X":
-                print("Вы победили!")
-            elif win == "O":
-                print("Компьютер победил!")
-            else:
-                print("Ничья!")
+import random
+
+class Ship:
+    def __init__(self, coordinates):
+        self.coordinates = coordinates
+
+class Board:
+    def __init__(self, ships):
+        self.ships = ships
+        self.board = [['О' for _ in range(6)] for _ in range(6)]
+        for ship in self.ships:
+            for coordinate in ship.coordinates:
+                x, y = coordinate
+                self.board[x][y] = '■'
+    
+    def print_board(self):
+        print('  | 1 | 2 | 3 | 4 | 5 | 6 |')
+        for i in range(6):
+            row = ' | '.join(self.board[i])
+            print(f"{i+1} | {row} |")
+    
+    def is_valid_coordinate(self, x, y):
+        if x < 0 or x >= 6 or y < 0 or y >= 6:
+            return False
+        return True
+    
+    def is_hit(self, x, y):
+        for ship in self.ships:
+            if (x, y) in ship.coordinates:
+                return True
+        return False
+    
+    def mark_hit(self, x, y):
+        self.board[x][y] = 'X'
+    
+    def mark_miss(self, x, y):
+        self.board[x][y] = 'T'
+    
+    def is_ship_destroyed(self, ship):
+        for coordinate in ship.coordinates:
+            x, y = coordinate
+            if self.board[x][y] != 'X':
+                return False
+        return True
+    
+    def is_game_over(self):
+        for ship in self.ships:
+            if not self.is_ship_destroyed(ship):
+                return False
+        return True
+
+def player_turn(board):
+    while True:
+        try:
+            x = int(input("Введите номер строки: ")) - 1
+            y = int(input("Введите номер столбца: ")) - 1
+            if not board.is_valid_coordinate(x, y):
+                raise ValueError("Некорректные координаты!")
+            if board.board[x][y] == 'X' or board.board[x][y] == 'T':
+                raise ValueError("Вы уже стреляли в эту клетку!")
+            break
+        except ValueError as e:
+            print(e)
+    return x, y
+
+def computer_turn(board):
+    while True:
+        x = random.randint(0, 5)
+        y = random.randint(0, 5)
+        if not board.is_valid_coordinate(x, y):
+            continue
+        if board.board[x][y] == 'X' or board.board[x][y] == 'T':
+            continue
+        break
+    return x, y
+
+def play_game():
+    player_ships = [
+        Ship([(0, 0), (0, 1), (0, 2)]),
+        Ship([(1, 3), (1, 4)]),
+        Ship([(3, 0), (3, 2), (3, 4)]),
+        Ship([(4, 4)])
+    ]
+    computer_ships = [
+        Ship([(0, 3), (0, 4), (0, 5)]),
+        Ship([(1, 0), (1, 1)]),
+        Ship([(3, 2)]),
+        Ship([(5, 0), (5, 2), (5, 4)])
+    ]
+    
+    player_board = Board(player_ships)
+    computer_board = Board(computer_ships)
+    
+    while True:
+        print("Доска игрока:")
+        player_board.print_board()
+        print("Доска компьютера:")
+        computer_board.print_board()
+        
+        print("Ход игрока:")
+        x, y = player_turn(computer_board)
+        if computer_board.is_hit(x, y):
+            computer_board.mark_hit(x, y)
+            if computer_board.is_ship_destroyed(computer_ships[0]):
+                print("Корабль противника подбит!")
         else:
-            game_over = False
-    else:
-        print("ничья")
-        game_over = True
-        win = "ничья"
- 
-    human = not(human)
+            computer_board.mark_miss(x, y)
+        
+        if computer_board.is_game_over():
+            print("Игрок победил!")
+            break
+        
+        print("Ход компьютера:")
+        x, y = computer_turn(player_board)
+        if player_board.is_hit(x, y):
+            player_board.mark_hit(x, y)
+            if player_board.is_ship_destroyed(player_ships[0]):
+                print("Ваш корабль подбит!")
+        else:
+            player_board.mark_miss(x, y)
+        
+        if player_board.is_game_over():
+            print("Компьютер победил!")
+            break
+
+play_game()
